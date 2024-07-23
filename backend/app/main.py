@@ -5,7 +5,7 @@ app = FastAPI()
 
 # Load your Excel data into a DataFrame
 # Make sure to install 'openpyxl' with 'pip install openpyxl' to handle .xlsx files
-df = pd.read_excel("../data/branded_food_ingredients.xlsx", usecols=['gtin_upc', 'ingredients'])
+df = pd.read_excel("../data/ingredients_data.xlsx", usecols=['gtin_upc', 'ingredients'])
 
 @app.get("/")
 def read_root():
@@ -13,6 +13,7 @@ def read_root():
 
 @app.get("/item/{barcode}")
 def read_item(barcode: str):
+    barcode = int(barcode)
     # Search the DataFrame for the barcode (now 'gtin_upc')
     item_data = df[df['gtin_upc'] == barcode]
     if not item_data.empty:
