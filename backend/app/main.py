@@ -1,23 +1,25 @@
 from fastapi import FastAPI
-import pandas as pd
+from .data_loader import DataLoader
+from .item_service import ItemService
 
-app = FastAPI()
+class App:
+    def __init__(self):
+        self.app = FastAPI()
+        self.data_loader = DataLoader("./data/ingredients_data.xlsx")
+        self.df = self.data_loader.get_data()
+        self.item_service = ItemService(self.df)
+        self.add_routes()
 
-# Load your Excel data into a DataFrame
-# Make sure to install 'openpyxl' with 'pip install openpyxl' to handle .xlsx files
-df = pd.read_excel("../data/ingredients_data.xlsx", usecols=['gtin_upc', 'ingredients'])
+    def add_routes(self):
+        @self.app.get("/")
+        def read_root():
+            return {"message": "Welcome to Nutrilyze backend!"}
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to Nutrilyze backend!"}
+        @self.app.get("/item/{barcode}")
+        def read_item(barcode: str):
+            barcode = int(barcode)
+            return self.item_service.get_ingredients_by_barcode(barcode)
 
-@app.get("/item/{barcode}")
-def read_item(barcode: str):
-    barcode = int(barcode)
-    # Search the DataFrame for the barcode (now 'gtin_upc')
-    item_data = df[df['gtin_upc'] == barcode]
-    if not item_data.empty:
-        # Retrieve 'ingredients' since we don't have 'product_name'
-        return {"ingredients": item_data['ingredients'].values[0]}
-    else:
-        return {"error": "Item not found"}
+# Create an instance of the App class
+app_instance = App()
+app = app_instance.app
