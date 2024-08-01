@@ -1,49 +1,47 @@
-import React, { useEffect, useRef } from 'react';
+// src/components/Scanner.js
+import React, { useEffect } from 'react';
 import Quagga from 'quagga';
 
 const Scanner = ({ onDetected }) => {
-  const scannerRef = useRef(null);
-
   useEffect(() => {
-    Quagga.init({
-      inputStream: {
-        type: 'LiveStream',
-        target: scannerRef.current,
-        constraints: {
-          width: 640,
-          height: 480,
-          facingMode: 'environment', // or 'user' for front camera
+    Quagga.init(
+      {
+        inputStream: {
+          type: 'LiveStream',
+          target: '#scanner-container',
+          constraints: {
+            width: 640,
+            height: 480,
+            facingMode: 'environment',
+          },
+        },
+        decoder: {
+          readers: ['ean_reader', 'code_128_reader', 'upc_reader'],
         },
       },
-      decoder: {
-        readers: ['ean_reader', 'code_128_reader', 'upc_reader'], // Add more readers if needed
-      },
-    }, (err) => {
-      if (err) {
-        console.error('QuaggaJS initialization failed:', err);
-        return;
+      (err) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        Quagga.start();
       }
-      Quagga.start();
-      console.log('QuaggaJS started');
-    });
+    );
 
     Quagga.onDetected((result) => {
-      const code = result.codeResult.code;
-      console.log('Barcode detected:', code);
-      if (onDetected) {
-        onDetected(code);
+      if (result && result.codeResult && result.codeResult.code) {
+        Quagga.stop(); // Stop processing further detection
+        onDetected(result.codeResult.code);
       }
     });
 
     return () => {
-      Quagga.stop();
-      console.log('QuaggaJS stopped');
+      Quagga.offDetected(); // Remove all event listeners
+      Quagga.stop(); // Stop the scanner when the component is unmounted
     };
   }, [onDetected]);
 
-  return (
-    <div ref={scannerRef} style={{ width: '100%', height: '100%' }} />
-  );
+  return <div id="scanner-container" style={{ width: '100%', height: '100%' }} />;
 };
 
 export default Scanner;

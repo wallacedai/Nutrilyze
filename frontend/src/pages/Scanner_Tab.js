@@ -6,19 +6,22 @@ const ScannerTab = () => {
   const [barcode, setBarcode] = useState('');
   const [item, setItem] = useState(null);
   const [error, setError] = useState(null);
-  const [scannerVisible, setScannerVisible] = useState(true);
+  const [scannerVisible, setScannerVisible] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
 
   const handleDetected = async (code) => {
     if (isFetching) return; // Prevent multiple fetch requests
-
-    setBarcode(code);
+  
+    // Convert the code to an integer to remove leading zeros
+    const normalizedCode = parseInt(code, 10).toString();
+  
+    setBarcode(normalizedCode);
     setScannerVisible(false); // Hide the scanner once a barcode is detected
     setIsFetching(true); // Set fetching flag to true
-
+  
     try {
-      const response = await fetch(`http://localhost:8000/item/${code}`);
-
+      const response = await fetch(`http://localhost:8000/item/${normalizedCode}`);
+  
       if (response.ok) {
         const data = await response.text(); // Use .text() to handle plain text response
         setItem(data);
@@ -30,13 +33,14 @@ const ScannerTab = () => {
         setError(errorData.message);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Fetch error:', error);
       setItem(null);
       setError('Failed to fetch data. Please check your network connection and try again.');
     } finally {
       setIsFetching(false); // Reset fetching flag
     }
   };
+  
 
   // Reset state when scanning another barcode
   const handleScanAnother = () => {
@@ -47,13 +51,21 @@ const ScannerTab = () => {
     setIsFetching(false);
   };
 
+  // Open the scanner
+  const openScanner = () => {
+    setScannerVisible(true);
+    setBarcode('');
+    setItem(null);
+    setError(null);
+  };
+
   return (
     <div>
       <h1>Scanner Tab</h1>
-      {scannerVisible ? (
-        <Scanner onDetected={handleDetected} />
+      {!scannerVisible ? (
+        <button onClick={openScanner}>Open Scanner</button>
       ) : (
-        <button onClick={handleScanAnother}>Scan Another Barcode</button>
+        <Scanner onDetected={handleDetected} />
       )}
       {barcode && (
         <div>
@@ -73,6 +85,9 @@ const ScannerTab = () => {
             <p>{error}</p>
           </div>
         )
+      )}
+      {!scannerVisible && barcode && (
+        <button onClick={handleScanAnother}>Scan Another Barcode</button>
       )}
     </div>
   );
